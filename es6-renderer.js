@@ -1,8 +1,9 @@
 const fs = require('fs'); // this engine requires the fs module
+const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 /* jshint ignore:start */
-const compile = (content, $ = '$') => Function($, 'return `' + content + '`;');
+const compile = (content, $ = '$') => AsyncFunction($, 'return `' + content + '`;');
 const precompile = (content, $ = '$') =>
-  Function($, 'try { return `' + content + '`;} catch(err) { return err }');
+  AsyncFunction($, 'try { return `' + content + '`;} catch(err) { return err }');
 /* jshint ignore:end */
 const setPath = (views, ref, ext) => ref.endsWith(ext) ? ref : views  + '/' + ref + ext;
 const getPartial = (path, cb = 'resolveNeutral') => {
@@ -30,10 +31,10 @@ module.exports = (path, options, render) => {
   };
   const {locals = {}, partials = {}, settings, template} = options; 
   const assign = (err, content) => {
-    const send = () => {
+    const send = async () => {
       if(render) {
         try {
-          const compiled = compile(content, localsKeys)(...localsValues);
+          const compiled = await  compile(content, localsKeys)(...localsValues);
           const output = render(null, compiled);
           return willResolve ? willResolve(compiled) : output;
         } catch(err) {
@@ -41,7 +42,7 @@ module.exports = (path, options, render) => {
         }
       }
       try {
-        return willResolve(compile(content, localsKeys)(...localsValues));
+        return willResolve(await compile(content, localsKeys)(...localsValues));
       } catch (err) {
         return willReject(err);
       }
